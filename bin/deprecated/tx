@@ -1,0 +1,42 @@
+#!/bin/bash
+
+function usage {
+cat << EOF
+  These are the options...
+EOF
+  exit 0
+}
+
+# tmux set pane-borfder-status top
+# tmux set pane-border-format "#{pane_index} #{pane_current_command}"
+# printf '\033]2;My Pane Title\033\\'
+# tmux set -g pane-border-format "#{pane_index} #T"
+
+# nested tmux:
+# unset TMUX
+# C-a a
+
+function vtop {
+  # themes: acid, becca, brew, certs, dark, monokai, parallax, seti, wizard
+  tmux new-window -n "main"
+  tmux split-window -v -p 89
+  tmux split-window -h -t 0 -p 70
+	tmux clock -t 0
+	tmux send-keys -t 1 "vtop --theme monokai" C-M
+}
+
+if [[ $# -eq 0 ]]; then
+  echo -e "You must provide an argument"
+  usage
+fi
+
+case "$1" in
+  vtop)
+    vtop
+    ;;
+  *)
+    echo -e "Invalid option $1"
+    usage
+    ;;
+esac
+

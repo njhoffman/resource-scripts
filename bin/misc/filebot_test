@@ -1,0 +1,74 @@
+#!/usr/bin/env node
+
+const spawn = require('child_process').spawn;
+const target = process.cwd();
+
+const clrBrightWhite = '\033[1;37m';
+const clrRed = '\033[0;31m';
+const clrBrightRed = '\033[1;31m';
+const clrYellow = '\033[1;33m';
+const clrOrange = '\033[0;33m';
+const clrGreen = '\033[0;32m';
+const clrBrightGreen = '\033[1;32m';
+const clrBlue = '\033[0;34m';
+const clrBrightBlue = '\033[1;34m';
+const clrCyan = '\033[0;36m';
+const clrBrightCyan = '\033[1;36m';
+const clrReset = '\033[0m';
+
+const args = [
+    '-rename',
+    target,
+    '-r',
+    '-non-strict',
+    '-no-xattr',
+    '--db',
+    'thetvdb',
+    '--action',
+    'test',
+    '--format',
+    '/mnt/e/Sorted/{n}/{s00e00} - {t}'
+];
+const filebot = spawn('filebot',args);
+
+let stdOut = "";
+filebot.stdout.on('data', data => {
+    // stdOut += data;
+    outputData(data + "");
+});
+
+filebot.stderr.on('data', data => {
+    // console.log('stderr: ' + data);
+});
+
+filebot.on('close', code => {
+    // outputData(stdOut);
+});
+
+const actionRE =  /^(\[\w+\]|skipped) (?:from )?\[(.*?)\] (to|because) \[(.*?)\](.*)/i;
+const outputData = (data) => {
+    data.split('\n').forEach(line => {
+        if (actionRE.test(line)) {
+            const color1 = RegExp.$1 === '[TEST]' ?
+                clrOrange : RegExp.$1 === '[MOVE]' ?
+                clrBrightGreen : RegExp.$1 === 'Skipped' ?
+                clrRed : clrBrightWhite;
+
+            let origin = RegExp.$2.replace(target, './').split('/');
+            origin = origin.slice(0, -1).join('/') + clrBrightWhite + origin.slice(-1) + clrReset;
+            let destination = RegExp.$4.replace(target, '').split('/');
+            destination = destination.slice(0, -1).join('/') + '/' +
+                clrCyan + destination.slice(-1) + clrReset;
+            // console.log(`${RegExp.$1}\n${origin}\n${RegExp.$3}\n${RegExp.$4}\n${RegExp.$5}`);
+            console.log(`  ${color1}${RegExp.$1}${clrReset}`);
+            console.log(`\t${origin} ${RegExp.$3}`);
+            console.log(`\t${destination} ${RegExp.$5}`);
+        } else if (line.trim().length > 0) {
+            console.log(line.replace(/(\[[^\]]+\])/, `${clrBrightGreen}$1${clrReset}`));
+        }
+    });
+};
+
+
+
+

@@ -1,0 +1,8 @@
+#!/bin/bash
+totalsize=0
+for filesize in $(ls -al . | grep "^-" | awk '{print $5}')
+do
+  let totalsize=$totalsize+$filesize/1024
+done
+echo -n "$totalsize"
+

@@ -1,0 +1,35 @@
+#!/bin/bash
+GIT_NAME="njhoffman"
+API="https://api.github.com"
+
+function usage {
+cat << EOF
+
+  Usage: github [COMMAND] [REPO_NAME]
+  COMMAND is create or delete
+EOF
+}
+
+function github_create() {
+  echo -e "\nAdding GitHub repository: $1 to $GIT_NAME\n"
+  curl -u "njhoffman" "$API/user/repos" -d "{\"name\":\"$1\"}"
+  echo -e "\nFinished\n"
+}
+
+function github_delete () {
+  echo -e "\nDeleting github repository $1 from $GIT_NAME\n"
+  curl -XDELETE -u 'njhoffman' "$API/repos/$GIT_NAME/$1"
+  echo -e "\nFinished\n"
+}
+
+if [[ $# -gt 1 ]]; then
+  if [[ $1 == "create" ]]; then
+    github_create $2
+  elif [[ $1 == "delete" ]]; then
+    github_delete $2
+  else
+    usage
+  fi
+else
+  usage
+fi

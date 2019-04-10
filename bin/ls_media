@@ -1,0 +1,161 @@
+#!/usr/bin/env node
+
+const spawn = require('child_process').spawn;
+const target = process.cwd();
+
+/*
+Complete name   Format   File size   Duration   Overall bit rate
+Format   Codec ID   WidthxHeight
+Format  Codec ID   Channel(s)   Sampling rate
+ */
+
+const clrBrightWhite = '\033[1;37m';
+const clrRed = '\033[0;31m';
+const clrBrightRed = '\033[1;31m';
+const clrYellow = '\033[1;33m';
+const clrOrange = '\033[0;33m';
+const clrGreen = '\033[0;32m';
+const clrBrightGreen = '\033[1;32m';
+const clrBlue = '\033[0;34m';
+const clrBrightBlue = '\033[1;34m';
+const clrCyan = '\033[0;36m';
+const clrBrightCyan = '\033[1;36m';
+const clrReset = '\033[0m';
+
+const maxChars = 120;
+const colSpacing = 3;
+const colNumber = process.argv[2] &&
+    process.argv[2] === '-c' &&
+    process.argv[3] ?
+    parseInt(process.argv[3]) + 1 : 9;
+
+console.log("Loading media info...");
+const mediainfo = spawn('mediainfo', [target]);
+
+let stdOut = "";
+mediainfo.stdout.on('data', data => {
+    stdOut += data;
+});
+
+mediainfo.stderr.on('data', data => {
+    console.log('stderr: ' + data);
+});
+
+mediainfo.on('close', code => {
+    outputData(formatData(stdOut));
+});
+
+const formatData = (data) => {
+    let out = [[ 'Name', 'Res', 'Size', 'Duration', 'Bit Rate', 'Container', 'Video', 'Codec', 'Audio' ].slice(0, colNumber)];
+    let lineOut = [];
+    let width = "";
+    data.split('\n\n').forEach(fileGroup => {
+        if (fileGroup.indexOf('Format') === -1) {
+            return;
+        }
+
+        if (/^General/.test(fileGroup)) {
+            if (fileGroup.indexOf('Duration') === -1) {
+                return;
+            }
+            out.push(lineOut.slice(0, colNumber));
+            lineOut = [];
+            fileGroup.split('\n').forEach(line => {
+                if (/:/.test(line)) {
+                    const label = line.split(':')[0].trim();
+                    const val = line.split(':')[1].trim();
+                    if (label === 'Complete name') {
+                        lineOut[0] = val.replace(target, '.');
+                    } else if (label === 'Format') {
+                        lineOut[5] = val;
+                    } else if (label === 'File size') {
+                        lineOut[2] = val;
+                    } else if (label === 'Duration') {
+                        lineOut[3] = val;
+                    } else if (label === 'Overall bit rate') {
+                        lineOut[4] = val.replace(/(\d) (\d)/, "$1$2");
+                    }
+                }
+            });
+        } else if (/^Video/.test(fileGroup)) {
+            fileGroup.split('\n').forEach(line => {
+                if (/:/.test(line)) {
+                    const label = line.split(':')[0].trim();
+                    const val = line.split(':')[1].trim();
+                    if (label === 'Format') {
+                        lineOut[6] = val;
+                    } else if (label === 'Codec ID') {
+                        lineOut[7] = val;
+                    } else if (label === 'Width') {
+                        width = val.replace(' pixels', '').replace(' ', '');
+                    } else if (label === 'Height') {
+                        const height = val.replace(' pixels', '').replace(' ', '');
+                        lineOut[1] = width + 'x' + height;
+                    }
+                }
+            });
+        } else if (/^Audio/.test(fileGroup)) {
+            fileGroup.split('\n').forEach(line => {
+                if (/:/.test(line)) {
+                    const label = line.split(':')[0].trim();
+                    const val = line.split(':')[1].trim();
+                    if (label === 'Format') {
+                        lineOut[8] = val;
+                    }
+                }
+            });
+        }
+    });
+    return out;
+};
+
+const calculateSpacings = (data) => {
+    // calculate spacings
+    let spacings = [];
+    data.forEach(line => {
+        line.forEach((col, i) => {
+            if (typeof spacings[i] === 'undefined') {
+                spacings[i] = colSpacing;
+            }
+            spacings[i] = col.length + colSpacing > spacings[i] ? col.length + colSpacing : spacings[i];
+            spacings[i] = spacings[i] > maxChars + colSpacing ? maxChars + colSpacing : spacings[i];
+        });
+    });
+    return spacings;
+};
+
+
+const outputData = (data) => {
+    const spacings = calculateSpacings(data);
+    console.log("");
+    data.forEach((line, lineNum) => {
+        let outLine = "";
+        line.forEach((col,i) => {
+            col = col.substr(0, maxChars);
+            if (col.length === maxChars) {
+                col = col.slice(0, -3) + '...';
+            }
+            const spacing = Array(spacings[i] - col.length).join(' ');
+            if (lineNum  === 0) {
+                col = clrBrightWhite + col + clrReset;
+            } else if (i === 0) {
+                col = clrBrightGreen + col + clrReset;
+            } else if (i === 1) {
+                const height = col.split('x')[1];
+                // sometimes 1080 videos are a bit under, 720 videos a bit under
+                if (parseInt(height) >= 1000) {
+                    col = clrBrightBlue + col + clrReset;
+                } else if (parseInt(height) >= 700) {
+                    col = clrYellow + col + clrReset;
+                } else {
+                    col = clrRed + col + clrReset;
+                }
+            }
+
+            outLine += col + spacing;
+        });
+        console.log(outLine);
+    });
+    console.log('\nTotal Files: ' + (data.length - 2));
+};
+

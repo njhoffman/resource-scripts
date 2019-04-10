@@ -1,0 +1,4 @@
+#!/bin/bash
+
+aws route53 list-resource-record-sets \
+  --query 'ResourceRecordSets[].{" Name":Name, Type:Type, TTL:TTL, Value:ResourceRecords[0].Value, Alias:AliasTarget.DNSName}'

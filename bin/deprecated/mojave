@@ -1,0 +1,172 @@
+#!/bin/bash
+
+SESSION_MAIN="main"
+SESSION_RIGHT="right"
+
+function usage {
+cat << EOF
+Usage: tmux-mojave [OPTIONS] [SCHOOL]
+Open a new tmux window with variable pane formats on mojave
+If SCHOOL is not provided, will still split panes but not "go" to that school
+If no OPTIONS are used, will open in existing pane
+
+Arguments:
+    -s2      Split new window into wizdebug.out and vim
+    -s2db    Split new window into sqlite3 courses and vim
+    -s3      Split new window into widebug.out, sqlite3 courses, and vim
+	-s4      * Split new window of main session into two wizdebug.out, right session with one vim window (+ hidden command pane) and sqlite3 window
+	-s5      * Split new window of main session into three wizdebug.out, right session with one vim window (+ hidden command pane) and sqlite3 window
+
+  * Must have a session open named "right"
+EOF
+exit 0
+}
+
+function tmuxMojave {
+
+	tmux new-window -n "mojave"
+	tmux send-keys -t 0 "$(sshMojave)" C-M
+	if [[ -n $SCHOOL ]]; then
+		tmux send-keys -t 0 "g $SCHOOL" C-M
+		tmux rename-window $SCHOOL
+	fi
+	case $TMUXSCREEN in
+		"s2")
+			tmux split-window -h -p 57
+			tmux send-keys -t 1 "$(sshMojave)" C-M
+			if [[ -n $SCHOOL ]]; then
+				tmux send-keys -t 1 "g $SCHOOL" C-M;
+				tmux send-keys -t 1 "vim ." C-M
+				tmux send-keys -t 1 ":CtrlP" C-M
+				tmux send-keys -t 0 "dbg" C-M
+			fi
+			tmux select-pane -t 1
+			;;
+		"s2db")
+			tmux split-window -h -p 57
+			tmux send-keys -t 1 "$(sshMojave)" C-M
+			if [[ -n $SCHOOL ]]; then
+				tmux send-keys -t 1 "g $SCHOOL" C-M;
+				tmux send-keys -t 1 "vim ." C-M
+				tmux send-keys -t 1 ":CtrlP" C-M
+				tmux send-keys -t 0 "g db" C-M
+				tmux send-keys -t 0 "dbcourse" C-M
+				tmux send-keys -t 0 "sqlite3 courses.sqlite" C-M
+			fi
+			tmux select-pane -t 1
+			;;
+		"s3")
+			tmux split-window -h -p 57
+			tmux send-keys -t 1 "$(sshMojave)" C-M
+			if [[ -n $SCHOOL ]]; then
+				tmux send-keys -t 1 "g $SCHOOL" C-M;
+				tmux send-keys -t 1 "vim ." C-M
+				tmux send-keys -t 1 ":CtrlP" C-M
+			fi
+			tmux split-window -t 0 -v -p 60
+			tmux send-keys -t 2 "$(sshMojave)" C-M
+			if [[ -n $SCHOOL ]]; then
+				# tail wizdebug.out
+				tmux send-keys -t 0 "dbg" C-M
+				# open courses.sqlite in db directory
+				tmux send-keys -t 2 "g $SCHOOL" C-M;
+				tmux send-keys -t 2 "g db" C-M;
+				tmux send-keys -t 2 "dbcourse" C-M
+				tmux send-keys -t 2 "sqlite3 courses.sqlite" C-M
+			fi
+			tmux select-pane -t 1
+			;;
+		"s4")
+			tmux split-window -h -p 50
+			tmux send-keys -t 1 "$(sshMojave)" C-M
+			if [[ -n $SCHOOL ]]; then
+				tmux send-keys -t 1 "g $SCHOOL" C-M;
+				tmux send-keys -t 1 "dbg" C-M
+				tmux send-keys -t 0 "dbg" C-M
+			fi
+			;;
+		"s5")
+			tmux split-window -h -p 50
+			tmux send-keys -t 1 "$(sshMojave)" C-M
+			if [[ -n $SCHOOL ]]; then
+				tmux send-keys -t 1 "g $SCHOOL" C-M;
+				tmux send-keys -t 1 "dbg" C-M
+				tmux send-keys -t 0 "dbg" C-M
+			fi
+			;;
+	esac
+}
+
+function tmuxSplitMojave {
+	PANE_DBG1="main.0"
+	PANE_DBG2="main.1"
+	PANE_VIM1="right.0"
+	PANE_VIM2="right.1"
+
+	PANE_DB="right.0"
+
+	# login to goMojave on both sessions
+	tmux new-window -n $(sshMojave)
+	tmux split-window -h
+	tmux new-window -n $(sshMojave) -t $SESSION_RIGHT
+	tmux split-window -v -t $PANE_VIM1
+	tmux send-keys -t $PANE_DBG1 "$(sshMojave)" C-M
+	tmux send-keys -t $PANE_DBG2 "$(sshMojave)" C-M
+	tmux send-keys -t $PANE_VIM1 "$(sshMojave)" C-M
+	tmux send-keys -t $PANE_VIM2 "$(sshMojave)" C-M
+	tmux resize-pane -Z -t $PANE_VIM1
+
+	if [[ $# -eq 1 ]]; then
+		tmux rename-window -t $SESSION_MAIN $1-dbg
+
+		# go vim school directory
+		tmux rename-window -t $SESSION_RIGHT $1-vim
+		tmux send-keys -t $PANE_VIM1 "gv $1" C-M
+		tmux send-keys -t $PANE_VIM2 "g $1" C-M
+
+		# open new window for db
+		tmux new-window -t $SESSION_RIGHT -n $1-db
+		tmux send-keys -t $PANE_DB "$(sshMojave)" C-M
+		tmux send-keys -t $PANE_DB "g $1 db" C-M
+		tmux send-keys -t $PANE_DB "sqlite3 courses.sqlite" C-M
+		tmux send-keys -t $PANE_DB ".tables" C-M
+		tmux select-window -t "$SESSION_RIGHT:-1"
+
+		# tail wizdebug.out
+		tmux send-keys -t $PANE_DBG1 "dbgsplit -t1 $1" C-M
+		tmux send-keys -t $PANE_DBG2 "dbgsplit -t2 $1" C-M
+	fi
+}
+
+function sshMojave {
+	#echo -e ssh -t nhoffman@mojave.leepfrog.com \"export CURRTERM=$CURRTERM\;export SSHCMD=\\\"$SSHCMD\\\"\;/bin/bash\"
+	echo -e ssh -t nhoffman@mojave.leepfrog.com \"export CURRTERM=$CURRTERM\;/bin/bash\"
+}
+
+tmux has-session -t "right" &>/dev/null
+# previous call exits with error code of 0 if session exists
+if [[ $? -eq 0 ]]; then
+	TMUXRIGHT=1
+fi
+
+while [[ $# > 0 ]]; do
+	key="$1"
+	shift
+	case $key in
+		-s1|-s2|-s3)
+			TMUXSCREEN="${key:1}"
+			if [[ -n "$TMUXRIGHT" ]]; then
+				TMUXSCREEN="3"
+			fi
+			;;
+		*)
+			SCHOOL="$key"
+			;;
+	esac
+done
+
+if [[ -n "$TMUXSCREEN" ]]; then
+	tmuxMojave
+else
+	eval $(sshMojave)
+fi

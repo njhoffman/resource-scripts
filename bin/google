@@ -1,0 +1,6 @@
+#!/bin/bash
+
+search=$1
+# J rolls down one line
+w3m "http://www.google.com/search?q=$search%s&btnI"
+# lynx -vikeys "http://www.google.com/search?q=$search%s&btnI"

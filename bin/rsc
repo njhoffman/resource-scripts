@@ -1,0 +1,30 @@
+#!/bin/bash
+
+RESOURCE_DIR="/home/vagrant/rsc"
+
+function usage {
+cat << EOF
+Usage: rsc [NAME]
+  Output file with syntax highlighting
+EOF
+}
+
+function outputResource {
+  curr_dir="$RESOURCE_DIR/commands/"
+  files=("${curr_dir}"*)
+  for file in "${files[@]}"; do
+    filename="${file/$curr_dir/}"
+    if [[ "${filename/\.sh/}" == "$1" ]]; then
+      . vimcat $file
+    fi
+  done
+}
+
+if [[ $# -eq 0 ]]; then
+  usage
+else
+  outputResource $1
+fi
+
+
+

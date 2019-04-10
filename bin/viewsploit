@@ -1,0 +1,2 @@
+#!/bin/bash
+vimcat /opt/metasploit-framework/modules/$1.rb

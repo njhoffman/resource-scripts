@@ -1,0 +1,9 @@
+#!/bin/bash
+currdir=${PWD}
+
+if [ "$#" -gt 0 ]; then
+        export CURRTERM=$1
+        echo $CURRTERM
+fi
+echo -e "\033]2;[$CURRTERM] $currdir\007"
+

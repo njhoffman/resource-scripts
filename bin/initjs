@@ -1,0 +1,10 @@
+#!/bin/bash
+# copy base files for a javascript project
+
+SOURCE_DIR="/home/$USER/projects/templates/base-js"
+
+[[ -n $1 ]] && mkdir "$1" && cp -rv "$SOURCE_DIR/." "$1"
+cp -rv "$SOURCE_DIR/." "."
+
+# npm install --save-dev eslint eslint-config-airbnb-base eslint-plugin-import eslint-plugin-promise eslint-watch babel-eslint eslint-plugin-babel
+

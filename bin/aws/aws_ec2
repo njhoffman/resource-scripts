@@ -1,0 +1,6 @@
+#!/bin/bash
+
+aws ec2 describe-instances \
+  --query 'Reservations[].Instances[].{" Name": Tags[?Key==`Name`].Value | [0], ID:InstanceId, Type:InstanceType, Image:ImageId, DNS:PublicDnsName, IP:PublicIpAddress, State:State.Name}'
+# VpcId, LaunchTime, KeyName
+# SecurityGroups => GroupId, GroupName

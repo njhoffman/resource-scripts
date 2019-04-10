@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+
+const lodashUrl = 'http://lodash.com/docs/';
+const spawn = require('child_process').spawn;
+
+if (process.argv.length <= 3) {
+  console.log('Must provide two arguments: <api> <method>');
+}
+
+const api = process.argv[2];
+const method  = process.argv[3];
+
+
+let lynx;
+switch(method) {
+  case 'lodash':
+    lynx = spawn('/usr/bin/lynx', [`${api}#${method}`], { stdio: 'inherit' });
+    lynx.stdout.on('data', onOut);
+    lynx.stderr.on('data', onOut);
+    break;
+  case 'default':
+    console.log(`Method ${method} not found`);
+    break;
+};
+
+const onOut = (data) => {
+  console.log('data', data);
+};
