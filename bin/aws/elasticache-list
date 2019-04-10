@@ -1,5 +1,0 @@
-#!/bin/bash
-
-aws elasticache describe-cache-clusters --show-cache-node-info --query \
-	'CacheClusters[].{ "  ID": CacheClusterId, "Engine": Engine, "  Status": CacheClusterStatus, " Endpoint": CacheNodes[0].Endpoint.Address, " Port":CacheNodes[0].Endpoint.Port, "Type": CacheNodeType, "Ver" : EngineVersion }'
-

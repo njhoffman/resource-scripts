@@ -1,9 +1,0 @@
-#!/bin/bash
-
-# AllowedValues, ChangeType, DataType, Description, ParamaterName, ParameterValue, Source, IsModifiable, MinimumEngineVersion
-
-aws elasticache describe-cache-parameters --cache-parameter-group-name redis-aof --query \
-  'Parameters[].{"  Name" : ParameterName, "  Value": ParameterValue, " Type": DataType, "Change": ChangeType, "Source": Source, "Modifiable": IsModifiable }'
-
-
-
